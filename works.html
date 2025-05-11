@@ -1,0 +1,1156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Console Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700&display=swap');
+        
+        :root {
+            --primary: #ffffff;
+            --primary-dark: #cccccc;
+            --secondary: #ff5555;
+            --danger: #ff0000;
+            --warning: #ffff00;
+            --terminal-bg: #000000;
+            --terminal-text: #ffffff;
+            --terminal-border: #333333;
+        }
+        
+        body {
+            font-family: 'JetBrains Mono', monospace;
+            background-color: #000000;
+            color: var(--terminal-text);
+            overflow-x: hidden;
+        }
+        
+        .console-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+        
+        .terminal-window {
+            background-color: var(--terminal-bg);
+            border: 1px solid var(--terminal-border);
+            border-radius: 0;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+        }
+        
+        .terminal-header {
+            border-bottom: 1px solid var(--terminal-border);
+            background: linear-gradient(90deg, #111111, #000000);
+        }
+        
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .dot-red { background-color: var(--danger); }
+        .dot-yellow { background-color: var(--warning); }
+        .dot-green { background-color: var(--secondary); }
+        
+        .glow-text {
+            text-shadow: 0 0 5px currentColor;
+        }
+        
+        .nav-item {
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+        
+        .nav-item:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .nav-item.active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-left: 3px solid var(--primary);
+        }
+        
+        .content-section {
+            display: none;
+        }
+        
+        .content-section.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .console-btn {
+            background: linear-gradient(145deg, #111111, #000000);
+            border: 1px solid var(--terminal-border);
+            transition: all 0.3s ease;
+        }
+        
+        .console-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background-color: #111111;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            transition: width 0.5s ease;
+        }
+        
+        .chat-message {
+            max-width: 80%;
+            border-radius: 0;
+            padding: 0.75rem 1rem;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+        
+        .user-message {
+            background-color: #222222;
+            margin-left: auto;
+            border-bottom-right-radius: 0;
+        }
+        
+        .bot-message {
+            background-color: #111111;
+            margin-right: auto;
+            border-bottom-left-radius: 0;
+        }
+        
+        .media-card {
+            transition: all 0.3s ease;
+            background: linear-gradient(145deg, #111111, #000000);
+            border: 1px solid var(--terminal-border);
+        }
+        
+        .media-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+        
+        .nsfw-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background-color: var(--danger);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0;
+            font-size: 0.75rem;
+        }
+        
+        .blur-content {
+            filter: blur(5px);
+            transition: filter 0.3s ease;
+        }
+        
+        .blur-content:hover {
+            filter: blur(0);
+        }
+        
+        .blur-toggle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        
+        .typewriter {
+            overflow: hidden;
+            border-right: 2px solid var(--primary);
+            white-space: nowrap;
+            animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--primary) }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* Underground style additions */
+        .graffiti-text {
+            font-family: 'Arial Black', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: white;
+            text-shadow: 2px 2px 0 #ff5555;
+        }
+        
+        .stencil-text {
+            font-family: 'Orbitron', sans-serif;
+            letter-spacing: 1px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .spray-effect {
+            position: relative;
+        }
+        
+        .spray-effect::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle, transparent 30%, rgba(0,0,0,0.7) 70%);
+            pointer-events: none;
+        }
+        
+        .vhs-glitch {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .vhs-glitch::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(0deg, 
+                rgba(255,0,0,0.1) 0%, 
+                rgba(0,255,0,0.1) 30%, 
+                rgba(0,0,255,0.1) 60%);
+            mix-blend-mode: screen;
+            pointer-events: none;
+        }
+        
+        .scanlines {
+            position: relative;
+        }
+        
+        .scanlines::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0,0,0,0.15),
+                rgba(0,0,0,0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+        }
+
+        /* Improved text contrast */
+        .text-primary {
+            color: var(--primary);
+        }
+
+        .text-secondary {
+            color: var(--secondary);
+        }
+
+        .text-warning {
+            color: var(--warning);
+        }
+
+        .text-danger {
+            color: var(--danger);
+        }
+
+        /* Enhanced input fields */
+        input, textarea, select {
+            background-color: #111111 !important;
+            border-color: #333333 !important;
+            color: white !important;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.2);
+        }
+
+        /* Better button styling */
+        .btn {
+            transition: all 0.2s ease;
+            transform: translateY(0);
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* Improved media cards */
+        .media-card .play-icon {
+            transition: all 0.3s ease;
+            opacity: 0;
+        }
+
+        .media-card:hover .play-icon {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        /* Smooth scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #111111;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #333333;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555555;
+        }
+    </style>
+</head>
+<body class="min-h-screen scanlines">
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <div class="w-64 bg-black border-r border-gray-800 flex flex-col">
+            <div class="p-4 border-b border-gray-800">
+                <h1 class="text-2xl font-bold stencil-text flex items-center">
+                    <i class="fas fa-radiation-alt mr-2 text-red-500"></i> NEXUS
+                </h1>
+                <p class="text-xs text-gray-500 mt-1">v2.5.3 - OFFLINE MODE</p>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-4 space-y-1">
+                <div class="nav-item active p-3 rounded-none cursor-pointer" data-section="dashboard">
+                    <div class="flex items-center">
+                        <i class="fas fa-tachometer-alt mr-3 text-white"></i>
+                        <span>Dashboard</span>
+                    </div>
+                </div>
+                
+                <div class="nav-item p-3 rounded-none cursor-pointer" data-section="movies">
+                    <div class="flex items-center">
+                        <i class="fas fa-film mr-3 text-red-500"></i>
+                        <span>Movies & Shows</span>
+                    </div>
+                </div>
+                
+                <div class="nav-item p-3 rounded-none cursor-pointer" data-section="music">
+                    <div class="flex items-center">
+                        <i class="fas fa-music mr-3 text-yellow-500"></i>
+                        <span>Music</span>
+                    </div>
+                </div>
+                
+                <div class="nav-item p-3 rounded-none cursor-pointer" data-section="chatbot">
+                    <div class="flex items-center">
+                        <i class="fas fa-robot mr-3 text-green-500"></i>
+                        <span>AI Chatbot</span>
+                    </div>
+                </div>
+                
+                <div class="nav-item p-3 rounded-none cursor-pointer" data-section="nsfw">
+                    <div class="flex items-center">
+                        <i class="fas fa-skull mr-3 text-purple-500"></i>
+                        <span>NSFW</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-800">
+                <div class="flex items-center justify-between text-sm">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                        <span>Local</span>
+                    </div>
+                    <span class="text-gray-500">OFFLINE</span>
+                </div>
+                <div class="mt-2 text-xs text-gray-500">
+                    <p>Last sync: 24m ago</p>
+                    <p>Storage: 1.2TB/2TB</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 overflow-y-auto vhs-glitch">
+            <!-- Header -->
+            <div class="bg-black border-b border-gray-800 p-4 flex justify-between items-center">
+                <div>
+                    <h2 class="text-xl font-bold stencil-text" id="current-section">Dashboard</h2>
+                    <p class="text-sm text-gray-500">Welcome back, User</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search Nexus..." class="bg-gray-900 border border-gray-800 rounded-none px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-white w-64">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+                    </div>
+                    <button class="bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-none p-2">
+                        <i class="fas fa-cog text-white"></i>
+                    </button>
+                    <div class="w-10 h-10 rounded-none bg-gray-900 border border-gray-800 flex items-center justify-center">
+                        <i class="fas fa-user text-white"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dashboard Content -->
+            <div class="p-6">
+                <!-- Dashboard Section -->
+                <div class="content-section active" id="dashboard-section">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                        <div class="terminal-window p-5">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-bold text-white">
+                                    <i class="fas fa-film mr-2 text-red-500"></i> Media Library
+                                </h3>
+                                <span class="text-xs bg-gray-900 text-white px-2 py-1 rounded-none">1,243 items</span>
+                            </div>
+                            <div class="progress-bar rounded-none mb-2">
+                                <div class="progress-fill rounded-none" style="width: 65%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500">65% storage used</p>
+                        </div>
+                        
+                        <div class="terminal-window p-5">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-bold text-white">
+                                    <i class="fas fa-music mr-2 text-yellow-500"></i> Music Collection
+                                </h3>
+                                <span class="text-xs bg-gray-900 text-white px-2 py-1 rounded-none">8,752 tracks</span>
+                            </div>
+                            <div class="progress-bar rounded-none mb-2">
+                                <div class="progress-fill rounded-none bg-yellow-500" style="width: 42%"></div>
+                            </div>
+                            <p class="text-xs text-gray-500">42% storage used</p>
+                        </div>
+                        
+                        <div class="terminal-window p-5">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-bold text-white">
+                                    <i class="fas fa-robot mr-2 text-green-500"></i> AI Models
+                                </h3>
+                                <span class="text-xs bg-gray-900 text-white px-2 py-1 rounded-none">3 active</span>
+                            </div>
+                            <div class="flex space-x-2">
+                                <span class="text-xs bg-gray-900 text-white px-2 py-1 rounded-none">GPT-4</span>
+                                <span class="text-xs bg-gray-900 text-white px-2 py-1 rounded-none">Llama 2</span>
+                                <span class="text-xs bg-gray-900 text-white px-2 py-1 rounded-none">StableDiff</span>
+                            </div>
+                        </div>
+                        
+                        <div class="terminal-window p-5">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="font-bold text-white">
+                                    <i class="fas fa-skull mr-2 text-purple-500"></i> NSFW Content
+                                </h3>
+                                <span class="text-xs bg-gray-900 text-white px-2 py-1 rounded-none">Locked</span>
+                            </div>
+                            <button class="w-full bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-none py-2 text-sm flex items-center justify-center">
+                                <i class="fas fa-lock mr-2 text-purple-500"></i> Unlock Section
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="terminal-window p-5 mb-6">
+                        <div class="terminal-header p-3 flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <div class="terminal-dot dot-red"></div>
+                                <div class="terminal-dot dot-yellow"></div>
+                                <div class="terminal-dot dot-green"></div>
+                            </div>
+                            <h3 class="text-sm font-bold text-white">Recent Activity</h3>
+                            <div class="text-xs text-gray-500">Terminal</div>
+                        </div>
+                        <div class="p-4 font-mono text-sm">
+                            <p class="text-green-500">> Welcome to Nexus Console</p>
+                            <p class="text-green-500">> System initialized in offline mode</p>
+                            <p class="text-yellow-500">> Loading media library... <span class="text-green-500">done</span></p>
+                            <p class="text-yellow-500">> Verifying AI models... <span class="text-green-500">3/3 operational</span></p>
+                            <p class="text-yellow-500">> Checking storage... <span class="text-red-500">1.2TB used</span></p>
+                            <p class="text-white">> Ready for commands</p>
+                            <p class="text-gray-500">> <span class="typewriter">Type 'help' for available commands</span></p>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="terminal-window p-5">
+                            <h3 class="font-bold mb-4 flex items-center text-white">
+                                <i class="fas fa-fire mr-2 text-red-500"></i> Trending Media
+                            </h3>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="media-card p-3 rounded-none cursor-pointer">
+                                    <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                        <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                            <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-sm font-medium truncate text-white">Dune: Part Two</h4>
+                                    <p class="text-xs text-gray-500">2024 • Sci-Fi</p>
+                                </div>
+                                <div class="media-card p-3 rounded-none cursor-pointer">
+                                    <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                        <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                            <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-sm font-medium truncate text-white">The Last of Us</h4>
+                                    <p class="text-xs text-gray-500">2023 • Drama</p>
+                                </div>
+                                <div class="media-card p-3 rounded-none cursor-pointer">
+                                    <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                        <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                            <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-sm font-medium truncate text-white">Oppenheimer</h4>
+                                    <p class="text-xs text-gray-500">2023 • Biography</p>
+                                </div>
+                                <div class="media-card p-3 rounded-none cursor-pointer">
+                                    <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                        <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                            <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-sm font-medium truncate text-white">Cyberpunk: Edgerunners</h4>
+                                    <p class="text-xs text-gray-500">2022 • Anime</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="terminal-window p-5">
+                            <h3 class="font-bold mb-4 flex items-center text-white">
+                                <i class="fas fa-headphones mr-2 text-yellow-500"></i> Recently Played
+                            </h3>
+                            <div class="space-y-3">
+                                <div class="flex items-center p-2 hover:bg-gray-900 rounded-none cursor-pointer">
+                                    <div class="w-10 h-10 bg-gray-900 rounded-none mr-3 flex items-center justify-center">
+                                        <i class="fas fa-music text-yellow-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-medium text-white">Blinding Lights</h4>
+                                        <p class="text-xs text-gray-500">The Weeknd • After Hours</p>
+                                    </div>
+                                    <i class="fas fa-play text-yellow-500 ml-2"></i>
+                                </div>
+                                <div class="flex items-center p-2 hover:bg-gray-900 rounded-none cursor-pointer">
+                                    <div class="w-10 h-10 bg-gray-900 rounded-none mr-3 flex items-center justify-center">
+                                        <i class="fas fa-music text-yellow-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-medium text-white">Save Your Tears</h4>
+                                        <p class="text-xs text-gray-500">The Weeknd • After Hours</p>
+                                    </div>
+                                    <i class="fas fa-play text-yellow-500 ml-2"></i>
+                                </div>
+                                <div class="flex items-center p-2 hover:bg-gray-900 rounded-none cursor-pointer">
+                                    <div class="w-10 h-10 bg-gray-900 rounded-none mr-3 flex items-center justify-center">
+                                        <i class="fas fa-music text-yellow-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-medium text-white">Starboy</h4>
+                                        <p class="text-xs text-gray-500">The Weeknd • Starboy</p>
+                                    </div>
+                                    <i class="fas fa-play text-yellow-500 ml-2"></i>
+                                </div>
+                                <div class="flex items-center p-2 hover:bg-gray-900 rounded-none cursor-pointer">
+                                    <div class="w-10 h-10 bg-gray-900 rounded-none mr-3 flex items-center justify-center">
+                                        <i class="fas fa-music text-yellow-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="text-sm font-medium text-white">Take My Breath</h4>
+                                        <p class="text-xs text-gray-500">The Weeknd • Dawn FM</p>
+                                    </div>
+                                    <i class="fas fa-play text-yellow-500 ml-2"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Movies & Shows Section -->
+                <div class="content-section" id="movies-section">
+                    <div class="terminal-window p-5 mb-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold stencil-text">
+                                <i class="fas fa-film mr-2 text-red-500"></i> Media Library
+                            </h2>
+                            <div class="flex space-x-2">
+                                <div class="relative">
+                                    <input type="text" placeholder="Search media..." class="bg-gray-900 border border-gray-800 rounded-none px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 w-64">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+                                </div>
+                                <button class="bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-none px-4 py-2 text-sm flex items-center">
+                                    <i class="fas fa-filter mr-2 text-white"></i> Filters
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                    </div>
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">1080p</span>
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">2h 35m</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">Interstellar</h4>
+                                <p class="text-xs text-gray-500">2014 • Sci-Fi</p>
+                                <div class="flex items-center mt-1">
+                                    <div class="flex items-center mr-2">
+                                        <i class="fas fa-star text-yellow-500 text-xs mr-1"></i>
+                                        <span class="text-xs text-white">8.6</span>
+                                    </div>
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">IMDb</span>
+                                </div>
+                            </div>
+                            
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                    </div>
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">4K</span>
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">1h 52m</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">Dune</h4>
+                                <p class="text-xs text-gray-500">2021 • Sci-Fi</p>
+                                <div class="flex items-center mt-1">
+                                    <div class="flex items-center mr-2">
+                                        <i class="fas fa-star text-yellow-500 text-xs mr-1"></i>
+                                        <span class="text-xs text-white">8.0</span>
+                                    </div>
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">IMDb</span>
+                                </div>
+                            </div>
+                            
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                    </div>
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">1080p</span>
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">2h 28m</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">The Dark Knight</h4>
+                                <p class="text-xs text-gray-500">2008 • Action</p>
+                                <div class="flex items-center mt-1">
+                                    <div class="flex items-center mr-2">
+                                        <i class="fas fa-star text-yellow-500 text-xs mr-1"></i>
+                                        <span class="text-xs text-white">9.0</span>
+                                    </div>
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">IMDb</span>
+                                </div>
+                            </div>
+                            
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                    </div>
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">720p</span>
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">1h 49m</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">Pulp Fiction</h4>
+                                <p class="text-xs text-gray-500">1994 • Crime</p>
+                                <div class="flex items-center mt-1">
+                                    <div class="flex items-center mr-2">
+                                        <i class="fas fa-star text-yellow-500 text-xs mr-1"></i>
+                                        <span class="text-xs text-white">8.9</span>
+                                    </div>
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">IMDb</span>
+                                </div>
+                            </div>
+                            
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-play-circle text-3xl text-red-500 play-icon"></i>
+                                    </div>
+                                    <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">1080p</span>
+                                            <span class="text-xs bg-gray-900/80 text-white px-1 rounded-none">2h 22m</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">Inception</h4>
+                                <p class="text-xs text-gray-500">2010 • Sci-Fi</p>
+                                <div class="flex items-center mt-1">
+                                    <div class="flex items-center mr-2">
+                                        <i class="fas fa-star text-yellow-500 text-xs mr-1"></i>
+                                        <span class="text-xs text-white">8.8</span>
+                                    </div>
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">IMDb</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-center">
+                            <button class="console-btn px-4 py-2 rounded-none flex items-center">
+                                <i class="fas fa-chevron-down mr-2 text-white"></i> Load More
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Music Section -->
+                <div class="content-section" id="music-section">
+                    <div class="terminal-window p-5 mb-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold stencil-text">
+                                <i class="fas fa-music mr-2 text-yellow-500"></i> Music Collection
+                            </h2>
+                            <div class="flex space-x-2">
+                                <div class="relative">
+                                    <input type="text" placeholder="Search music..." class="bg-gray-900 border border-gray-800 rounded-none px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-500 w-64">
+                                    <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+                                </div>
+                                <button class="bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-none px-4 py-2 text-sm flex items-center">
+                                    <i class="fas fa-sort mr-2 text-white"></i> Sort
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-square bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-compact-disc text-4xl text-yellow-500 play-icon"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">After Hours</h4>
+                                <p class="text-xs text-gray-500">The Weeknd • 2020</p>
+                                <div class="flex items-center mt-1">
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">14 tracks</span>
+                                </div>
+                            </div>
+                            
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-square bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-compact-disc text-4xl text-yellow-500 play-icon"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">Starboy</h4>
+                                <p class="text-xs text-gray-500">The Weeknd • 2016</p>
+                                <div class="flex items-center mt-1">
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">18 tracks</span>
+                                </div>
+                            </div>
+                            
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-square bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-compact-disc text-4xl text-yellow-500 play-icon"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">Dawn FM</h4>
+                                <p class="text-xs text-gray-500">The Weeknd • 2022</p>
+                                <div class="flex items-center mt-1">
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">16 tracks</span>
+                                </div>
+                            </div>
+                            
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-square bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-compact-disc text-4xl text-yellow-500 play-icon"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">Beauty Behind The Madness</h4>
+                                <p class="text-xs text-gray-500">The Weeknd • 2015</p>
+                                <div class="flex items-center mt-1">
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">14 tracks</span>
+                                </div>
+                            </div>
+                            
+                            <div class="media-card p-3 rounded-none cursor-pointer group">
+                                <div class="aspect-square bg-gray-900 rounded-none mb-2 overflow-hidden relative">
+                                    <div class="w-full h-full flex items-center justify-center text-gray-700">
+                                        <i class="fas fa-compact-disc text-4xl text-yellow-500 play-icon"></i>
+                                    </div>
+                                </div>
+                                <h4 class="text-sm font-medium truncate text-white">Kiss Land</h4>
+                                <p class="text-xs text-gray-500">The Weeknd • 2013</p>
+                                <div class="flex items-center mt-1">
+                                    <span class="text-xs bg-gray-900 text-white px-1 rounded-none">10 tracks</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8">
+                            <h3 class="font-bold mb-4 flex items-center text-white">
+                                <i class="fas fa-headphones mr-2 text-yellow-500"></i> Now Playing
+                            </h3>
+                            <div class="bg-gray-900 border border-gray-800 rounded-none p-4">
+                                <div class="flex items-center">
+                                    <div class="w-16 h-16 bg-gray-800 rounded-none mr-4 flex items-center justify-center">
+                                        <i class="fas fa-music text-2xl text-yellow-500"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-medium text-white">Blinding Lights</h4>
+                                        <p class="text-sm text-gray-500">The Weeknd • After Hours</p>
+                                        <div class="flex items-center mt-2">
+                                            <span class="text-xs text-gray-500 mr-2">3:20</span>
+                                            <div class="flex-1 bg-gray-800 rounded-none h-1">
+                                                <div class="bg-yellow-500 h-1 rounded-none" style="width: 45%"></div>
+                                            </div>
+                                            <span class="text-xs text-gray-500 ml-2">1:28 left</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center space-x-3">
+                                        <button class="w-8 h-8 rounded-none bg-gray-800 flex items-center justify-center">
+                                            <i class="fas fa-step-backward text-xs text-white"></i>
+                                        </button>
+                                        <button class="w-10 h-10 rounded-none bg-yellow-600 flex items-center justify-center">
+                                            <i class="fas fa-pause text-sm text-black"></i>
+                                        </button>
+                                        <button class="w-8 h-8 rounded-none bg-gray-800 flex items-center justify-center">
+                                            <i class="fas fa-step-forward text-xs text-white"></i>
+                                        </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                
+                <!-- AI Chatbot Section -->
+                <div class="content-section" id="chatbot-section">
+                    <div class="terminal-window p-5 mb-6">
+                        <div class="flex justify-between items-center mb-6">
+                            <h2 class="text-xl font-bold stencil-text">
+                                <i class="fas fa-robot mr-2 text-green-500"></i> AI Chatbot
+                            </h2>
+                            <div class="flex space-x-2">
+                                <div class="relative">
+                                    <select class="bg-gray-900 border border-gray-800 rounded-none px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 appearance-none">
+                                        <option>GPT-4</option>
+                                        <option>Llama 2</option>
+                                        <option>Claude 2</option>
+                                    </select>
+                                    <i class="fas fa-robot absolute left-3 top-3 text-gray-500"></i>
+                                </div>
+                                <button class="bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-none px-4 py-2 text-sm flex items-center">
+                                    <i class="fas fa-sliders-h mr-2 text-white"></i> Settings
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-black rounded-none p-4 h-96 overflow-y-auto mb-4">
+                            <div class="chat-message bot-message">
+                                <div class="flex items-start mb-1">
+                                    <div class="w-6 h-6 rounded-none bg-green-600 flex items-center justify-center mr-2">
+                                        <i class="fas fa-robot text-xs text-black"></i>
+                                    </div>
+                                    <span class="font-medium text-xs text-white">Nexus AI</span>
+                                </div>
+                                <p class="text-sm text-white">Hello! I'm your offline AI assistant. How can I help you today?</p>
+                            </div>
+                            
+                            <div class="chat-message user-message">
+                                <div class="flex items-start mb-1">
+                                    <div class="w-6 h-6 rounded-none bg-gray-800 flex items-center justify-center mr-2">
+                                        <i class="fas fa-user text-xs text-white"></i>
+                                    </div>
+                                    <span class="font-medium text-xs text-white">You</span>
+                                </div>
+                                <p class="text-sm text-white">What movies would you recommend based on my watching history?</p>
+                            </div>
+                            
+                            <div class="chat-message bot-message">
+                                <div class="flex items-start mb-1">
+                                    <div class="w-6 h-6 rounded-none bg-green-600 flex items-center justify-center mr-2">
+                                        <i class="fas fa-robot text-xs text-black"></i>
+                                    </div>
+                                    <span class="font-medium text-xs text-white">Nexus AI</span>
+                                </div>
+                                <p class="text-sm text-white">Based on your preference for sci-fi films like Interstellar and Dune, I'd recommend:</p>
+                                <ul class="text-sm list-disc list-inside mt-2 text-white">
+                                    <li class="mb-1">Arrival (2016) - Thought-provoking alien contact story</li>
+                                    <li class="mb-1">Ex Machina (2014) - AI psychological thriller</li>
+                                    <li class="mb-1">Annihilation (2018) - Mysterious sci-fi horror</li>
+                                    <li class="mb-1">The Martian (2015) - Survival story on Mars</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="chat-message bot-message">
+                                <div class="flex items-start mb-1">
+                                    <div class="w-6 h-6 rounded-none bg-green-600 flex items-center justify-center mr-2">
+                                        <i class="fas fa-robot text-xs text-black"></i>
+                                    </div>
+                                    <span class="font-medium text-xs text-white">Nexus AI</span>
+                                </div>
+                                <p class="text-sm text-white">Would you like me to add any of these to your watchlist?</p>
+                            </div>
+                        </div>
+                        
+                        <div class="relative">
+                            <textarea placeholder="Message Nexus AI..." class="w-full bg-gray-900 border border-gray-800 rounded-none px-4 py-3 pr-12 focus:outline-none focus:ring-2 focus:ring-green-500 resize-none text-white" rows="2"></textarea>
+                            <button class="absolute right-3 bottom-3 w-8 h-8 rounded-none bg-green-600 flex items-center justify-center">
+                                <i class="fas fa-paper-plane text-sm text-black"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- NSFW Section -->
+                <div class="content-section" id="nsfw-section">
+                    <div class="terminal-window p-5 mb-6">
+                        <div class="flex flex-col items-center justify-center py-12">
+                            <div class="w-20 h-20 rounded-none bg-red-600 flex items-center justify-center mb-4">
+                                <i class="fas fa-exclamation-triangle text-2xl text-black"></i>
+                            </div>
+                            <h2 class="text-xl font-bold stencil-text mb-2">
+                                Age Verification Required
+                            </h2>
+                            <p class="text-sm text-gray-500 mb-6 text-center max-w-md">
+                                This section contains adult content. You must be at least 18 years old to access this content.
+                            </p>
+                            
+                            <div class="w-full max-w-sm">
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium mb-1 text-white">Birthdate</label>
+                                    <input type="date" class="w-full bg-gray-900 border border-gray-800 rounded-none px-4 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 text-white">
+                                </div>
+                                
+                                <div class="flex items-center mb-6">
+                                    <input type="checkbox" id="confirm-age" class="mr-2">
+                                    <label for="confirm-age" class="text-sm text-white">I confirm that I am at least 18 years old</label>
+                                </div>
+                                
+                                <button class="w-full bg-red-600 hover:bg-red-700 rounded-none py-2 font-medium flex items-center justify-center">
+                                    <i class="fas fa-lock-open mr-2 text-black"></i> Unlock NSFW Content
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Hidden content that would be shown after verification -->
+                        <div class="hidden" id="nsfw-content">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-xl font-bold stencil-text">
+                                    <i class="fas fa-skull mr-2 text-purple-500"></i> NSFW Content
+                                </h2>
+                                <div class="flex space-x-2">
+                                    <div class="relative">
+                                        <input type="text" placeholder="Search..." class="bg-gray-900 border border-gray-800 rounded-none px-4 py-2 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-64 text-white">
+                                        <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+                                    </div>
+                                    <button class="bg-gray-900 hover:bg-gray-800 border border-gray-800 rounded-none px-4 py-2 text-sm flex items-center">
+                                        <i class="fas fa-filter mr-2 text-white"></i> Filters
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                                <div class="media-card p-3 rounded-none cursor-pointer group relative blur-content">
+                                    <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden">
+                                        <div class="w-full h-full flex items-center justify-center text-gray-700 group-hover:text-purple-500 transition-colors">
+                                            <i class="fas fa-play-circle text-3xl"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-sm font-medium truncate text-white">Content Title</h4>
+                                    <p class="text-xs text-gray-500">Category • Duration</p>
+                                    <div class="nsfw-badge">
+                                        <i class="fas fa-exclamation mr-1"></i> 18+
+                                    </div>
+                                </div>
+                                
+                                <div class="media-card p-3 rounded-none cursor-pointer group relative blur-content">
+                                    <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden">
+                                        <div class="w-full h-full flex items-center justify-center text-gray-700 group-hover:text-purple-500 transition-colors">
+                                            <i class="fas fa-play-circle text-3xl"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-sm font-medium truncate text-white">Content Title</h4>
+                                    <p class="text-xs text-gray-500">Category • Duration</p>
+                                    <div class="nsfw-badge">
+                                        <i class="fas fa-exclamation mr-1"></i> 18+
+                                    </div>
+                                </div>
+                                
+                                <div class="media-card p-3 rounded-none cursor-pointer group relative blur-content">
+                                    <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden">
+                                        <div class="w-full h-full flex items-center justify-center text-gray-700 group-hover:text-purple-500 transition-colors">
+                                            <i class="fas fa-play-circle text-3xl"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-sm font-medium truncate text-white">Content Title</h4>
+                                    <p class="text-xs text-gray-500">Category • Duration</p>
+                                    <div class="nsfw-badge">
+                                        <i class="fas fa-exclamation mr-1"></i> 18+
+                                    </div>
+                                </div>
+                                
+                                <div class="media-card p-3 rounded-none cursor-pointer group relative blur-content">
+                                    <div class="aspect-w-16 aspect-h-9 bg-gray-900 rounded-none mb-2 overflow-hidden">
+                                        <div class="w-full h-full flex items-center justify-center text-gray-700 group-hover:text-purple-500 transition-colors">
+                                            <i class="fas fa-play-circle text-3xl"></i>
+                                        </div>
+                                    </div>
+                                    <h4 class="text-sm font-medium truncate text-white">Content Title</h4>
+                                    <p class="text-xs text-gray-500">Category • Duration</p>
+                                    <div class="nsfw-badge">
+                                        <i class="fas fa-exclamation mr-1"></i> 18+
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 text-center text-sm text-gray-500">
+                                <p>This content is restricted to adults only. By accessing this section, you confirm you are at least 18 years old.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation between sections
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                // Remove active class from all nav items
+                document.querySelectorAll('.nav-item').forEach(nav => {
+                    nav.classList.remove('active');
+                });
+                
+                // Add active class to clicked nav item
+                this.classList.add('active');
+                
+                // Get the section to show
+                const sectionId = this.getAttribute('data-section');
+                
+                // Hide all content sections
+                document.querySelectorAll('.content-section').forEach(section => {
+                    section.classList.remove('active');
+                });
+                
+                // Show the selected section
+                document.getElementById(`${sectionId}-section`).classList.add('active');
+                
+                // Update the header title
+                const sectionTitles = {
+                    'dashboard': 'Dashboard',
+                    'movies': 'Movies & Shows',
+                    'music': 'Music',
+                    'chatbot': 'AI Chatbot',
+                    'nsfw': 'NSFW'
+                };
+                document.getElementById('current-section').textContent = sectionTitles[sectionId];
+            });
+        });
+        
+        // Simulate terminal typing effect
+        setTimeout(() => {
+            const terminalText = document.querySelector('.typewriter');
+            if (terminalText) {
+                terminalText.style.borderRight = 'none';
+                terminalText.classList.remove('typewriter');
+            }
+        }, 3500);
+        
+        // NSFW unlock functionality
+        const unlockBtn = document.querySelector('#nsfw-section button');
+        if (unlockBtn) {
+            unlockBtn.addEventListener('click', function() {
+                const confirmCheck = document.getElementById('confirm-age');
+                const birthdateInput = document.querySelector('#nsfw-section input[type="date"]');
+                
+                if (confirmCheck.checked && birthdateInput.value) {
+                    // In a real app, you would verify the age here
+                    document.getElementById('nsfw-content').classList.remove('hidden');
+                    document.querySelector('#nsfw-section > div > div').classList.add('hidden');
+                    
+                    // Remove blur from content
+                    document.querySelectorAll('.blur-content').forEach(item => {
+                        item.classList.remove('blur-content');
+                    });
+                } else {
+                    alert('Please confirm your age and provide your birthdate.');
+                }
+            });
+        }
+        
+        // Media card hover effects
+        document.querySelectorAll('.media-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                const icon = this.querySelector('.play-icon');
+                if (icon) {
+                    icon.classList.add('scale-110');
+                    icon.style.opacity = '1';
+                }
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                const icon = this.querySelector('.play-icon');
+                if (icon) {
+                    icon.classList.remove('scale-110');
+                    icon.style.opacity = '0';
+                }
+            });
+        });
+        
+        // Simulate now playing progress
+        setInterval(() => {
+            const progress = document.querySelector('#music-section .progress-fill');
+            if (progress) {
+                const currentWidth = parseFloat(progress.style.width || '0');
+                if (currentWidth < 100) {
+                    progress.style.width = `${currentWidth + 0.5}%`;
+                }
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
