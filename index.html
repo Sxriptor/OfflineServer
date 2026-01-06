@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' file: data:">
+    <title>Nexus Vault</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Orbitron:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="scanlines">
+    <!-- Setup Screen -->
+    <div id="setup-screen" class="setup-screen">
+        <div class="setup-container">
+            <div class="setup-icon">
+                <span class="icon-radiation">☢</span>
+            </div>
+            <h1 class="stencil-text">NEXUS VAULT</h1>
+            <p class="setup-subtitle">Offline Media Archive System</p>
+            
+            <div id="dependency-check" class="dependency-section">
+                <h3>System Check</h3>
+                <div class="dep-item" id="dep-ytdlp">
+                    <span class="dep-icon">⏳</span>
+                    <span class="dep-name">yt-dlp</span>
+                    <span class="dep-status">Checking...</span>
+                </div>
+                <div class="dep-item" id="dep-ffmpeg">
+                    <span class="dep-icon">⏳</span>
+                    <span class="dep-name">ffmpeg</span>
+                    <span class="dep-status">Checking...</span>
+                </div>
+            </div>
+            
+            <div id="missing-deps" class="missing-deps hidden">
+                <div class="warning-box">
+                    <span class="warning-icon">⚠</span>
+                    <div class="warning-text">
+                        <h4>Missing Dependencies</h4>
+                        <p id="missing-deps-text"></p>
+                        <div class="install-links">
+                            <a href="#" id="link-ytdlp" class="install-link hidden">Install yt-dlp →</a>
+                            <a href="#" id="link-ffmpeg" class="install-link hidden">Install ffmpeg →</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button class="vault-btn" id="setup-vault-btn">
+                <span class="btn-icon">📁</span> Choose Vault Folder
+            </button>
+            <p class="setup-hint">Select a folder to store your downloaded media</p>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="main-app hidden">
+        <div class="app-container">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <h1 class="stencil-text logo">
+                        <span class="logo-icon">☢</span> NEXUS
+                    </h1>
+                    <p class="version">v1.0.0 - OFFLINE</p>
+                </div>
+                
+                <nav class="nav-menu">
+                    <div class="nav-item active" data-section="dashboard">
+                        <span class="nav-icon">📊</span>
+                        <span>Dashboard</span>
+                    </div>
+                    <div class="nav-item" data-section="downloads">
+                        <span class="nav-icon">⬇️</span>
+                        <span>Downloads</span>
+                    </div>
+                    <div class="nav-item" data-section="library">
+                        <span class="nav-icon">🎬</span>
+                        <span>Library</span>
+                    </div>
+                    <div class="nav-item" data-section="settings">
+                        <span class="nav-icon">⚙️</span>
+                        <span>Settings</span>
+                    </div>
+                </nav>
+                
+                <div class="sidebar-footer">
+                    <div class="status-indicator">
+                        <span class="status-dot online"></span>
+                        <span>Local Mode</span>
+                    </div>
+                    <div class="storage-info">
+                        <p id="item-count">0 items</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <!-- Header -->
+                <header class="content-header">
+                    <div class="header-left">
+                        <h2 class="section-title stencil-text" id="current-section">Dashboard</h2>
+                        <p class="vault-path" id="vault-path-display"></p>
+                    </div>
+                    <div class="header-right">
+                        <button class="icon-btn" id="change-vault-btn" title="Change Vault">
+                            <span>📁</span>
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Dashboard Section -->
+                <div class="content-section active" id="dashboard-section">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <h3><span class="stat-icon">🎬</span> Videos</h3>
+                                <span class="stat-badge" id="video-count">0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="video-progress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <h3><span class="stat-icon">📄</span> Files</h3>
+                                <span class="stat-badge" id="file-count">0</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill yellow" id="file-progress" style="width: 0%"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <h3><span class="stat-icon">✅</span> yt-dlp</h3>
+                                <span class="stat-badge" id="ytdlp-status">--</span>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-header">
+                                <h3><span class="stat-icon">🎞️</span> ffmpeg</h3>
+                                <span class="stat-badge" id="ffmpeg-status">--</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <div class="terminal-dots">
+                                <span class="dot red"></span>
+                                <span class="dot yellow"></span>
+                                <span class="dot green"></span>
+                            </div>
+                            <span class="terminal-title">Activity Log</span>
+                        </div>
+                        <div class="terminal-body" id="activity-log">
+                            <p class="log-line green">> Nexus Vault initialized</p>
+                            <p class="log-line green">> System ready</p>
+                            <p class="log-line">> Waiting for commands...</p>
+                        </div>
+                    </div>
+                    
+                    <div class="recent-section">
+                        <h3 class="section-subtitle"><span>🕐</span> Recent Downloads</h3>
+                        <div class="recent-grid" id="recent-items"></div>
+                    </div>
+                </div>
+                
+                <!-- Downloads Section -->
+                <div class="content-section" id="downloads-section">
+                    <div class="download-panel">
+                        <div class="download-card">
+                            <h3><span class="card-icon">📺</span> YouTube Download</h3>
+                            <p class="card-desc">Download videos from YouTube using yt-dlp</p>
+                            <div class="input-group">
+                                <input type="text" id="youtube-url" placeholder="Paste YouTube URL...">
+                                <button id="youtube-btn" class="action-btn">Download</button>
+                            </div>
+                        </div>
+                        
+                        <div class="download-card">
+                            <h3><span class="card-icon">📁</span> File Download</h3>
+                            <p class="card-desc">Download any file by URL (PDFs, ZIPs, etc.)</p>
+                            <div class="input-group">
+                                <input type="text" id="file-url" placeholder="File URL...">
+                                <input type="text" id="filename" placeholder="Save as..." class="filename-input">
+                                <button id="file-btn" class="action-btn">Download</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="download-status" id="download-status">
+                        <div class="status-header">
+                            <span class="status-icon">📥</span>
+                            <span class="status-text" id="status-message">Ready to download</span>
+                        </div>
+                        <div class="progress-bar large">
+                            <div class="progress-fill" id="download-progress" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Library Section -->
+                <div class="content-section" id="library-section">
+                    <div class="library-header">
+                        <div class="search-box">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="search-input" placeholder="Search library...">
+                        </div>
+                        <div class="filter-btns">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="video">Videos</button>
+                            <button class="filter-btn" data-filter="file">Files</button>
+                        </div>
+                    </div>
+                    
+                    <div class="library-grid" id="library-grid"></div>
+                </div>
+                
+                <!-- Settings Section -->
+                <div class="content-section" id="settings-section">
+                    <div class="settings-panel">
+                        <div class="setting-card">
+                            <h3><span class="card-icon">📁</span> Vault Location</h3>
+                            <p class="setting-value" id="settings-vault-path">Not set</p>
+                            <button class="action-btn secondary" id="settings-change-vault">Change Vault</button>
+                        </div>
+                        
+                        <div class="setting-card">
+                            <h3><span class="card-icon">🔧</span> Dependencies</h3>
+                            <div class="dep-list">
+                                <div class="dep-row">
+                                    <span>yt-dlp</span>
+                                    <span class="dep-badge" id="settings-ytdlp">Checking...</span>
+                                </div>
+                                <div class="dep-row">
+                                    <span>ffmpeg</span>
+                                    <span class="dep-badge" id="settings-ffmpeg">Checking...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-card">
+                            <h3><span class="card-icon">ℹ️</span> About</h3>
+                            <p class="about-text">Nexus Vault v1.0.0</p>
+                            <p class="about-text muted">Offline-first media archive system</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="renderer.js"></script>
+</body>
+</html>
