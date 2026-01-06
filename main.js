@@ -124,28 +124,48 @@ ipcMain.handle('open-file', (e, filePath) => {
 })
 
 
-ipcMain.handle('download-youtube', async (e, url) => {
+ipcMain.handle('download-youtube', async (e, url, format = 'video') => {
   const vaultPath = db.getSettings().vaultPath
   if (!vaultPath) return { success: false, error: 'No vault selected' }
 
   const ytdlpPath = getToolPath('yt-dlp')
   const ffmpegPath = getToolPath('ffmpeg')
   const ffmpegDir = path.dirname(ffmpegPath)
+  
+  const isAudioOnly = format === 'audio'
 
   return new Promise((resolve) => {
     const outputTemplate = path.join(vaultPath, '%(title)s.%(ext)s')
-    const args = [
-      '-f', 'bv*+ba/b',  // best video + best audio, or best combined
-      '--merge-output-format', 'mp4',
-      '--audio-format', 'aac',
-      '--postprocessor-args', 'ffmpeg:-c:a aac -b:a 192k',
-      '-o', outputTemplate,
-      '--write-thumbnail',
-      '--convert-thumbnails', 'jpg',
-      '--no-playlist',
-      '--print', 'after_move:filepath',
-      '--print', 'title'
-    ]
+    let args = []
+    
+    if (isAudioOnly) {
+      // Audio only - extract to MP3
+      args = [
+        '-x',  // Extract audio
+        '--audio-format', 'mp3',
+        '--audio-quality', '0',  // Best quality
+        '-o', outputTemplate,
+        '--write-thumbnail',
+        '--convert-thumbnails', 'jpg',
+        '--no-playlist',
+        '--print', 'after_move:filepath',
+        '--print', 'title'
+      ]
+    } else {
+      // Video + Audio
+      args = [
+        '-f', 'bv*+ba/b',  // best video + best audio, or best combined
+        '--merge-output-format', 'mp4',
+        '--audio-format', 'aac',
+        '--postprocessor-args', 'ffmpeg:-c:a aac -b:a 192k',
+        '-o', outputTemplate,
+        '--write-thumbnail',
+        '--convert-thumbnails', 'jpg',
+        '--no-playlist',
+        '--print', 'after_move:filepath',
+        '--print', 'title'
+      ]
+    }
     
     // Add ffmpeg location if we have a bundled/custom path
     if (ffmpegPath !== 'ffmpeg') {
@@ -213,7 +233,7 @@ ipcMain.handle('download-youtube', async (e, url) => {
         db.addItem({
           id: uuid(),
           title: title || path.basename(filePath),
-          type: 'video',
+          type: isAudioOnly ? 'audio' : 'video',
           url,
           filePath,
           thumbnail,
@@ -222,7 +242,7 @@ ipcMain.handle('download-youtube', async (e, url) => {
         resolve({ success: true })
       } else {
         // Even if exit code is 0, file might not exist
-        resolve({ success: false, error: 'Video file not found after download' })
+        resolve({ success: false, error: 'File not found after download' })
       }
     })
     

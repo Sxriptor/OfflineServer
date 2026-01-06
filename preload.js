@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('vault', {
   getItems: () => ipcRenderer.invoke('get-items'),
   deleteItem: (id) => ipcRenderer.invoke('delete-item', id),
   openFile: (filePath) => ipcRenderer.invoke('open-file', filePath),
-  downloadYouTube: (url) => ipcRenderer.invoke('download-youtube', url),
+  downloadYouTube: (url, format) => ipcRenderer.invoke('download-youtube', url, format),
   downloadFile: (url, filename) => ipcRenderer.invoke('download-file', url, filename),
   checkDependencies: () => ipcRenderer.invoke('check-dependencies'),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),

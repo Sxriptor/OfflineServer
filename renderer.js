@@ -3,6 +3,19 @@ let allItems = []
 let currentFilter = 'all'
 let dependencies = { ytdlp: false, ffmpeg: false }
 
+// Section titles mapping
+const sectionTitles = {
+  dashboard: 'Dashboard',
+  movies: 'Movies & Shows',
+  music: 'Music',
+  downloads: 'Downloads',
+  nsfw: 'NSFW',
+  settings: 'Settings'
+}
+
+let nsfwUnlocked = false
+let nsfwBlurred = true
+
 async function init() {
   // Check dependencies first
   await checkDependencies()
@@ -131,20 +144,65 @@ function setupEventListeners() {
     })
   })
   
-  // Filter buttons
-  document.querySelectorAll('.filter-btn').forEach(btn => {
+  // Filter buttons (movies section)
+  document.querySelectorAll('#movies-section .filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'))
+      document.querySelectorAll('#movies-section .filter-btn').forEach(b => b.classList.remove('active'))
       btn.classList.add('active')
       currentFilter = btn.dataset.filter
-      renderLibrary()
+      renderMoviesGrid()
     })
   })
   
-  // Search
-  document.getElementById('search-input').addEventListener('input', (e) => {
-    renderLibrary(e.target.value)
-  })
+  // Search inputs
+  const moviesSearch = document.getElementById('movies-search')
+  if (moviesSearch) {
+    moviesSearch.addEventListener('input', (e) => {
+      renderMoviesGrid(e.target.value)
+    })
+  }
+  
+  const musicSearch = document.getElementById('music-search')
+  if (musicSearch) {
+    musicSearch.addEventListener('input', (e) => {
+      renderMusicGrid(e.target.value)
+    })
+  }
+  
+  const globalSearch = document.getElementById('global-search')
+  if (globalSearch) {
+    globalSearch.addEventListener('input', (e) => {
+      // Search across current section
+      const activeSection = document.querySelector('.content-section.active')
+      if (activeSection.id === 'movies-section') {
+        renderMoviesGrid(e.target.value)
+      } else if (activeSection.id === 'music-section') {
+        renderMusicGrid(e.target.value)
+      } else if (activeSection.id === 'nsfw-section') {
+        renderNsfwGrid(e.target.value)
+      }
+    })
+  }
+  
+  // NSFW unlock button
+  const nsfwUnlockBtn = document.getElementById('nsfw-unlock-btn')
+  if (nsfwUnlockBtn) {
+    nsfwUnlockBtn.addEventListener('click', unlockNsfw)
+  }
+  
+  // NSFW blur toggle
+  const nsfwBlurToggle = document.getElementById('nsfw-blur-toggle')
+  if (nsfwBlurToggle) {
+    nsfwBlurToggle.addEventListener('click', toggleNsfwBlur)
+  }
+  
+  // NSFW search
+  const nsfwSearch = document.getElementById('nsfw-search')
+  if (nsfwSearch) {
+    nsfwSearch.addEventListener('input', (e) => {
+      renderNsfwGrid(e.target.value)
+    })
+  }
 }
 
 function navigateTo(section) {
@@ -160,13 +218,7 @@ function navigateTo(section) {
   document.getElementById(`${section}-section`).classList.add('active')
   
   // Update title
-  const titles = {
-    dashboard: 'Dashboard',
-    downloads: 'Downloads',
-    library: 'Library',
-    settings: 'Settings'
-  }
-  document.getElementById('current-section').textContent = titles[section]
+  document.getElementById('current-section').textContent = sectionTitles[section] || section
 }
 
 function showMainApp(vaultPath) {
@@ -189,24 +241,122 @@ async function selectVault() {
 async function loadItems() {
   allItems = await window.vault.getItems()
   updateStats()
-  renderLibrary()
+  renderMoviesGrid()
+  renderMusicGrid()
+  renderNsfwGrid()
   renderRecentItems()
+  renderTrendingItems()
 }
 
 
 function updateStats() {
   const videos = allItems.filter(i => i.type === 'video').length
+  const audio = allItems.filter(i => i.type === 'audio' || isAudioFile(i.filePath)).length
   const files = allItems.filter(i => i.type === 'file').length
   const total = allItems.length
   
-  document.getElementById('video-count').textContent = videos
-  document.getElementById('file-count').textContent = files
+  document.getElementById('video-count').textContent = `${videos} items`
+  document.getElementById('music-count').textContent = `${audio} tracks`
   document.getElementById('item-count').textContent = `${total} items`
   
   // Update progress bars (assuming max 100 items for visual)
   const maxItems = Math.max(total, 100)
   document.getElementById('video-progress').style.width = `${(videos / maxItems) * 100}%`
-  document.getElementById('file-progress').style.width = `${(files / maxItems) * 100}%`
+  document.getElementById('music-progress').style.width = `${(audio / maxItems) * 100}%`
+  
+  // Update storage stats in settings
+  const storageVideos = document.getElementById('storage-videos')
+  const storageMusic = document.getElementById('storage-music')
+  const storageOther = document.getElementById('storage-other')
+  if (storageVideos) storageVideos.textContent = `${videos} files`
+  if (storageMusic) storageMusic.textContent = `${audio} files`
+  if (storageOther) storageOther.textContent = `${files} files`
+}
+
+function isAudioFile(filePath) {
+  if (!filePath) return false
+  const ext = filePath.toLowerCase().split('.').pop()
+  return ['mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'wma'].includes(ext)
+}
+
+function isVideoFile(filePath) {
+  if (!filePath) return false
+  const ext = filePath.toLowerCase().split('.').pop()
+  return ['mp4', 'mkv', 'avi', 'mov', 'webm', 'wmv', 'flv'].includes(ext)
+}
+
+function renderMoviesGrid(searchTerm = '') {
+  const grid = document.getElementById('movies-grid')
+  let filtered = allItems.filter(i => i.type === 'video' || isVideoFile(i.filePath))
+  
+  // Apply type filter
+  if (currentFilter === 'video') {
+    filtered = filtered.filter(i => i.type === 'video')
+  } else if (currentFilter === 'file') {
+    filtered = filtered.filter(i => i.type === 'file')
+  }
+  
+  // Apply search
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase()
+    filtered = filtered.filter(i => i.title.toLowerCase().includes(term))
+  }
+  
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">🎬</span>
+        <h3>No Media Yet</h3>
+        <p>${allItems.length === 0 ? 'Download videos to see them here' : 'Try a different search or filter'}</p>
+      </div>
+    `
+    return
+  }
+  
+  grid.innerHTML = filtered.map(item => createMediaCard(item)).join('')
+  attachCardListeners()
+}
+
+function renderMusicGrid(searchTerm = '') {
+  const grid = document.getElementById('music-grid')
+  let filtered = allItems.filter(i => i.type === 'audio' || isAudioFile(i.filePath))
+  
+  // Apply search
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase()
+    filtered = filtered.filter(i => i.title.toLowerCase().includes(term))
+  }
+  
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">🎵</span>
+        <h3>No Music Yet</h3>
+        <p>${allItems.length === 0 ? 'Download audio files to see them here' : 'Try a different search'}</p>
+      </div>
+    `
+    return
+  }
+  
+  grid.innerHTML = filtered.map(item => createMusicCard(item)).join('')
+  attachMusicCardListeners()
+}
+
+function renderTrendingItems() {
+  const container = document.getElementById('trending-items')
+  const videos = allItems.filter(i => i.type === 'video' || isVideoFile(i.filePath)).slice(0, 4)
+  
+  if (videos.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state small">
+        <p>No media yet</p>
+      </div>
+    `
+    return
+  }
+  
+  container.innerHTML = videos.map(item => createTrendingCard(item)).join('')
+  attachCardListeners()
 }
 
 function renderLibrary(searchTerm = '') {
@@ -240,19 +390,161 @@ function renderLibrary(searchTerm = '') {
 
 function renderRecentItems() {
   const container = document.getElementById('recent-items')
-  const recent = allItems.slice(0, 4)
+  const recent = allItems.slice(0, 5)
   
   if (recent.length === 0) {
     container.innerHTML = `
-      <div class="empty-state">
+      <div class="empty-state small">
         <p>No recent downloads</p>
       </div>
     `
     return
   }
   
-  container.innerHTML = recent.map(item => createMediaCard(item)).join('')
-  attachCardListeners()
+  container.innerHTML = recent.map(item => createRecentItem(item)).join('')
+  attachRecentItemListeners()
+}
+
+function createRecentItem(item) {
+  const icon = item.type === 'video' ? '🎬' : isAudioFile(item.filePath) ? '🎵' : '📄'
+  return `
+    <div class="recent-item" data-path="${escapeHtml(item.filePath)}">
+      <div class="recent-item-icon">${icon}</div>
+      <div class="recent-item-info">
+        <p class="recent-item-title">${escapeHtml(item.title)}</p>
+        <p class="recent-item-meta">${item.type}</p>
+      </div>
+    </div>
+  `
+}
+
+function createTrendingCard(item) {
+  const icon = item.type === 'video' ? '🎬' : '📄'
+  return `
+    <div class="media-card small" data-id="${item.id}">
+      <div class="media-thumbnail small">
+        ${item.thumbnail ? `<img src="file://${escapeHtml(item.thumbnail)}" alt="">` : icon}
+      </div>
+      <div class="media-info">
+        <p class="media-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</p>
+        <p class="media-type">${item.type}</p>
+      </div>
+    </div>
+  `
+}
+
+function createMusicCard(item) {
+  return `
+    <div class="music-card" data-path="${escapeHtml(item.filePath)}" data-id="${item.id}">
+      <div class="music-card-art">🎵</div>
+      <p class="music-card-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</p>
+      <p class="music-card-artist">${item.type}</p>
+    </div>
+  `
+}
+
+function attachRecentItemListeners() {
+  document.querySelectorAll('.recent-item').forEach(item => {
+    item.addEventListener('click', () => {
+      window.vault.openFile(item.dataset.path)
+    })
+  })
+}
+
+function attachMusicCardListeners() {
+  document.querySelectorAll('.music-card').forEach(card => {
+    card.addEventListener('click', () => {
+      window.vault.openFile(card.dataset.path)
+    })
+  })
+}
+
+// NSFW Functions
+function unlockNsfw() {
+  const birthdate = document.getElementById('nsfw-birthdate').value
+  const confirmed = document.getElementById('nsfw-confirm').checked
+  
+  if (!birthdate || !confirmed) {
+    alert('Please confirm your age and provide your birthdate.')
+    return
+  }
+  
+  // Check if 18+
+  const birth = new Date(birthdate)
+  const today = new Date()
+  let age = today.getFullYear() - birth.getFullYear()
+  const monthDiff = today.getMonth() - birth.getMonth()
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+    age--
+  }
+  
+  if (age < 18) {
+    alert('You must be at least 18 years old to access this content.')
+    return
+  }
+  
+  nsfwUnlocked = true
+  document.getElementById('nsfw-gate').classList.add('hidden')
+  document.getElementById('nsfw-content').classList.remove('hidden')
+  addLog('NSFW section unlocked', 'yellow')
+}
+
+function toggleNsfwBlur() {
+  nsfwBlurred = !nsfwBlurred
+  document.querySelectorAll('.nsfw-card').forEach(card => {
+    card.classList.toggle('blurred', nsfwBlurred)
+  })
+}
+
+function renderNsfwGrid(searchTerm = '') {
+  const grid = document.getElementById('nsfw-grid')
+  if (!grid) return
+  
+  // Filter items tagged as NSFW (you can customize this logic)
+  let filtered = allItems.filter(i => i.nsfw === true || (i.title && i.title.toLowerCase().includes('nsfw')))
+  
+  // Apply search
+  if (searchTerm) {
+    const term = searchTerm.toLowerCase()
+    filtered = filtered.filter(i => i.title.toLowerCase().includes(term))
+  }
+  
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state">
+        <span class="empty-icon">💀</span>
+        <h3>No NSFW Content</h3>
+        <p>NSFW tagged content will appear here</p>
+      </div>
+    `
+    return
+  }
+  
+  grid.innerHTML = filtered.map(item => createNsfwCard(item)).join('')
+  attachNsfwCardListeners()
+}
+
+function createNsfwCard(item) {
+  const blurClass = nsfwBlurred ? 'blurred' : ''
+  return `
+    <div class="nsfw-card ${blurClass}" data-path="${escapeHtml(item.filePath)}" data-id="${item.id}">
+      <div class="nsfw-card-thumbnail">
+        ${item.thumbnail ? `<img src="file://${escapeHtml(item.thumbnail)}" alt="">` : '💀'}
+      </div>
+      <div class="nsfw-card-info">
+        <p class="nsfw-card-title" title="${escapeHtml(item.title)}">${escapeHtml(item.title)}</p>
+      </div>
+      <span class="nsfw-badge">18+</span>
+    </div>
+  `
+}
+
+function attachNsfwCardListeners() {
+  document.querySelectorAll('.nsfw-card').forEach(card => {
+    card.addEventListener('click', () => {
+      window.vault.openFile(card.dataset.path)
+    })
+  })
 }
 
 function createMediaCard(item) {
@@ -299,6 +591,7 @@ function attachCardListeners() {
 async function downloadYouTube() {
   const input = document.getElementById('youtube-url')
   const url = input.value.trim()
+  const format = document.querySelector('input[name="yt-format"]:checked').value
   
   if (!url) return
   
@@ -308,16 +601,17 @@ async function downloadYouTube() {
     return
   }
   
+  const formatLabel = format === 'audio' ? 'audio' : 'video'
   setDownloading(true)
-  addLog(`Starting YouTube download: ${url}`, 'yellow')
-  document.getElementById('status-message').textContent = 'Starting YouTube download...'
+  addLog(`Starting YouTube ${formatLabel} download: ${url}`, 'yellow')
+  document.getElementById('status-message').textContent = `Downloading ${formatLabel}...`
   
-  const result = await window.vault.downloadYouTube(url)
+  const result = await window.vault.downloadYouTube(url, format)
   
   setDownloading(false)
   if (result.success) {
     input.value = ''
-    addLog('YouTube download complete!', 'green')
+    addLog(`YouTube ${formatLabel} download complete!`, 'green')
     document.getElementById('status-message').textContent = 'Download complete!'
     await loadItems()
   } else {

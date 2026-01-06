@@ -62,7 +62,7 @@
                     <h1 class="stencil-text logo">
                         <span class="logo-icon">☢</span> NEXUS
                     </h1>
-                    <p class="version">v1.0.0 - OFFLINE</p>
+                    <p class="version">v1.0.0 - OFFLINE MODE</p>
                 </div>
                 
                 <nav class="nav-menu">
@@ -70,13 +70,21 @@
                         <span class="nav-icon">📊</span>
                         <span>Dashboard</span>
                     </div>
+                    <div class="nav-item" data-section="movies">
+                        <span class="nav-icon">🎬</span>
+                        <span>Movies & Shows</span>
+                    </div>
+                    <div class="nav-item" data-section="music">
+                        <span class="nav-icon">🎵</span>
+                        <span>Music</span>
+                    </div>
                     <div class="nav-item" data-section="downloads">
                         <span class="nav-icon">⬇️</span>
                         <span>Downloads</span>
                     </div>
-                    <div class="nav-item" data-section="library">
-                        <span class="nav-icon">🎬</span>
-                        <span>Library</span>
+                    <div class="nav-item" data-section="nsfw">
+                        <span class="nav-icon">💀</span>
+                        <span>NSFW</span>
                     </div>
                     <div class="nav-item" data-section="settings">
                         <span class="nav-icon">⚙️</span>
@@ -91,6 +99,7 @@
                     </div>
                     <div class="storage-info">
                         <p id="item-count">0 items</p>
+                        <p id="storage-used">Storage: --</p>
                     </div>
                 </div>
             </div>
@@ -104,6 +113,10 @@
                         <p class="vault-path" id="vault-path-display"></p>
                     </div>
                     <div class="header-right">
+                        <div class="header-search">
+                            <span class="search-icon">🔍</span>
+                            <input type="text" id="global-search" placeholder="Search Nexus...">
+                        </div>
                         <button class="icon-btn" id="change-vault-btn" title="Change Vault">
                             <span>📁</span>
                         </button>
@@ -115,22 +128,24 @@
                     <div class="stats-grid">
                         <div class="stat-card">
                             <div class="stat-header">
-                                <h3><span class="stat-icon">🎬</span> Videos</h3>
-                                <span class="stat-badge" id="video-count">0</span>
+                                <h3><span class="stat-icon">🎬</span> Media Library</h3>
+                                <span class="stat-badge" id="video-count">0 items</span>
                             </div>
                             <div class="progress-bar">
                                 <div class="progress-fill" id="video-progress" style="width: 0%"></div>
                             </div>
+                            <p class="stat-hint">Videos in vault</p>
                         </div>
                         
                         <div class="stat-card">
                             <div class="stat-header">
-                                <h3><span class="stat-icon">📄</span> Files</h3>
-                                <span class="stat-badge" id="file-count">0</span>
+                                <h3><span class="stat-icon">🎵</span> Music Collection</h3>
+                                <span class="stat-badge" id="music-count">0 tracks</span>
                             </div>
                             <div class="progress-bar">
-                                <div class="progress-fill yellow" id="file-progress" style="width: 0%"></div>
+                                <div class="progress-fill yellow" id="music-progress" style="width: 0%"></div>
                             </div>
+                            <p class="stat-hint">Audio files</p>
                         </div>
                         
                         <div class="stat-card">
@@ -138,6 +153,7 @@
                                 <h3><span class="stat-icon">✅</span> yt-dlp</h3>
                                 <span class="stat-badge" id="ytdlp-status">--</span>
                             </div>
+                            <p class="stat-hint">Video downloader</p>
                         </div>
                         
                         <div class="stat-card">
@@ -145,6 +161,7 @@
                                 <h3><span class="stat-icon">🎞️</span> ffmpeg</h3>
                                 <span class="stat-badge" id="ffmpeg-status">--</span>
                             </div>
+                            <p class="stat-hint">Media processor</p>
                         </div>
                     </div>
                     
@@ -164,9 +181,97 @@
                         </div>
                     </div>
                     
-                    <div class="recent-section">
-                        <h3 class="section-subtitle"><span>🕐</span> Recent Downloads</h3>
-                        <div class="recent-grid" id="recent-items"></div>
+                    <div class="dashboard-grid">
+                        <div class="dashboard-panel">
+                            <h3 class="panel-title"><span>🔥</span> Trending Media</h3>
+                            <div class="trending-grid" id="trending-items">
+                                <div class="empty-state small">
+                                    <p>No media yet</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="dashboard-panel">
+                            <h3 class="panel-title"><span>🕐</span> Recently Added</h3>
+                            <div class="recent-list" id="recent-items">
+                                <div class="empty-state small">
+                                    <p>No recent downloads</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Movies & Shows Section -->
+                <div class="content-section" id="movies-section">
+                    <div class="section-header">
+                        <h2 class="panel-title"><span>🎬</span> Media Library</h2>
+                        <div class="section-controls">
+                            <div class="search-box">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="movies-search" placeholder="Search media...">
+                            </div>
+                            <div class="filter-btns">
+                                <button class="filter-btn active" data-filter="all">All</button>
+                                <button class="filter-btn" data-filter="video">Videos</button>
+                                <button class="filter-btn" data-filter="file">Files</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="media-grid" id="movies-grid">
+                        <div class="empty-state">
+                            <span class="empty-icon">🎬</span>
+                            <h3>No Media Yet</h3>
+                            <p>Download videos to see them here</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Music Section -->
+                <div class="content-section" id="music-section">
+                    <div class="section-header">
+                        <h2 class="panel-title"><span>🎵</span> Music Collection</h2>
+                        <div class="section-controls">
+                            <div class="search-box">
+                                <span class="search-icon">🔍</span>
+                                <input type="text" id="music-search" placeholder="Search music...">
+                            </div>
+                            <button class="sort-btn">
+                                <span>📊</span> Sort
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="music-grid" id="music-grid">
+                        <div class="empty-state">
+                            <span class="empty-icon">🎵</span>
+                            <h3>No Music Yet</h3>
+                            <p>Download audio files to see them here</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Now Playing Bar -->
+                    <div class="now-playing hidden" id="now-playing">
+                        <div class="now-playing-info">
+                            <div class="now-playing-icon">🎵</div>
+                            <div class="now-playing-details">
+                                <h4 id="now-playing-title">No track playing</h4>
+                                <p id="now-playing-artist">--</p>
+                            </div>
+                        </div>
+                        <div class="now-playing-controls">
+                            <button class="control-btn" id="prev-btn">⏮️</button>
+                            <button class="control-btn play" id="play-btn">▶️</button>
+                            <button class="control-btn" id="next-btn">⏭️</button>
+                        </div>
+                        <div class="now-playing-progress">
+                            <span id="current-time">0:00</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="audio-progress" style="width: 0%"></div>
+                            </div>
+                            <span id="total-time">0:00</span>
+                        </div>
                     </div>
                 </div>
                 
@@ -175,11 +280,33 @@
                     <div class="download-panel">
                         <div class="download-card">
                             <h3><span class="card-icon">📺</span> YouTube Download</h3>
-                            <p class="card-desc">Download videos from YouTube using yt-dlp</p>
+                            <p class="card-desc">Download videos or audio from YouTube using yt-dlp</p>
                             <div class="input-group">
                                 <input type="text" id="youtube-url" placeholder="Paste YouTube URL...">
-                                <button id="youtube-btn" class="action-btn">Download</button>
                             </div>
+                            <div class="format-options">
+                                <label class="format-option">
+                                    <input type="radio" name="yt-format" value="video" checked>
+                                    <span class="format-label">
+                                        <span class="format-icon">🎬</span>
+                                        <span class="format-text">
+                                            <strong>Video + Audio</strong>
+                                            <small>Full video with sound (MP4)</small>
+                                        </span>
+                                    </span>
+                                </label>
+                                <label class="format-option">
+                                    <input type="radio" name="yt-format" value="audio">
+                                    <span class="format-label">
+                                        <span class="format-icon">🎵</span>
+                                        <span class="format-text">
+                                            <strong>Audio Only</strong>
+                                            <small>Extract audio track (MP3)</small>
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
+                            <button id="youtube-btn" class="action-btn full-width">Download</button>
                         </div>
                         
                         <div class="download-card">
@@ -188,8 +315,8 @@
                             <div class="input-group">
                                 <input type="text" id="file-url" placeholder="File URL...">
                                 <input type="text" id="filename" placeholder="Save as..." class="filename-input">
-                                <button id="file-btn" class="action-btn">Download</button>
                             </div>
+                            <button id="file-btn" class="action-btn full-width">Download</button>
                         </div>
                     </div>
                     
@@ -202,23 +329,69 @@
                             <div class="progress-fill" id="download-progress" style="width: 0%"></div>
                         </div>
                     </div>
+                    
+                    <div class="download-queue">
+                        <h3 class="panel-title"><span>📋</span> Download Queue</h3>
+                        <div class="queue-list" id="queue-list">
+                            <div class="empty-state small">
+                                <p>No active downloads</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- Library Section -->
-                <div class="content-section" id="library-section">
-                    <div class="library-header">
-                        <div class="search-box">
-                            <span class="search-icon">🔍</span>
-                            <input type="text" id="search-input" placeholder="Search library...">
-                        </div>
-                        <div class="filter-btns">
-                            <button class="filter-btn active" data-filter="all">All</button>
-                            <button class="filter-btn" data-filter="video">Videos</button>
-                            <button class="filter-btn" data-filter="file">Files</button>
+                <!-- NSFW Section -->
+                <div class="content-section" id="nsfw-section">
+                    <!-- Age Verification Gate -->
+                    <div class="nsfw-gate" id="nsfw-gate">
+                        <div class="nsfw-gate-content">
+                            <div class="nsfw-icon">⚠️</div>
+                            <h2 class="stencil-text">Age Verification Required</h2>
+                            <p class="nsfw-desc">This section contains adult content. You must be at least 18 years old to access this content.</p>
+                            
+                            <div class="nsfw-form">
+                                <div class="form-group">
+                                    <label>Birthdate</label>
+                                    <input type="date" id="nsfw-birthdate">
+                                </div>
+                                
+                                <div class="form-checkbox">
+                                    <input type="checkbox" id="nsfw-confirm">
+                                    <label for="nsfw-confirm">I confirm that I am at least 18 years old</label>
+                                </div>
+                                
+                                <button class="action-btn danger" id="nsfw-unlock-btn">
+                                    <span>🔓</span> Unlock NSFW Content
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
-                    <div class="library-grid" id="library-grid"></div>
+                    <!-- NSFW Content (hidden until verified) -->
+                    <div class="nsfw-content hidden" id="nsfw-content">
+                        <div class="section-header">
+                            <h2 class="panel-title"><span>💀</span> NSFW Content</h2>
+                            <div class="section-controls">
+                                <div class="search-box">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" id="nsfw-search" placeholder="Search...">
+                                </div>
+                                <button class="filter-btn" id="nsfw-blur-toggle">
+                                    <span>👁️</span> Toggle Blur
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="nsfw-grid" id="nsfw-grid">
+                            <div class="empty-state">
+                                <span class="empty-icon">💀</span>
+                                <h3>No NSFW Content</h3>
+                                <p>NSFW tagged content will appear here</p>
+                            </div>
+                        </div>
+                        
+                        <p class="nsfw-disclaimer">This content is restricted to adults only. By accessing this section, you confirm you are at least 18 years old.</p>
+                    </div>
                 </div>
                 
                 <!-- Settings Section -->
@@ -240,6 +413,24 @@
                                 <div class="dep-row">
                                     <span>ffmpeg</span>
                                     <span class="dep-badge" id="settings-ffmpeg">Checking...</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="setting-card">
+                            <h3><span class="card-icon">💾</span> Storage</h3>
+                            <div class="storage-stats">
+                                <div class="storage-row">
+                                    <span>Videos</span>
+                                    <span id="storage-videos">0 files</span>
+                                </div>
+                                <div class="storage-row">
+                                    <span>Music</span>
+                                    <span id="storage-music">0 files</span>
+                                </div>
+                                <div class="storage-row">
+                                    <span>Other</span>
+                                    <span id="storage-other">0 files</span>
                                 </div>
                             </div>
                         </div>
